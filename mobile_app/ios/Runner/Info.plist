@@ -26,6 +26,11 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+
+	<!-- Kamera izni eklendi -->
+	<key>NSCameraUsageDescription</key>
+	<string>Bu uygulama yüz tanıma için kamerayı kullanır</string>
+
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>

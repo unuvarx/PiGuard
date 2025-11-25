@@ -5,6 +5,8 @@ import 'package:mobile_app/view_model/shared/layout_vm.dart';
 import 'package:provider/provider.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();  // << bu satır kesin olmalı
+
   HttpOverrides.global = new MyHttpOverrides();
   runApp(
     MultiProvider(
