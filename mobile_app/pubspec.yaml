@@ -37,6 +37,12 @@ dependencies:
   provider: ^6.1.5+1
   video_player: ^2.10.1
   http: ^1.6.0
+  camera: ^0.11.3
+  path_provider: ^2.1.5
+  tflite_flutter: ^0.10.1
+  image: ^4.0.17
+  google_mlkit_face_detection: ^0.13.1
+
 
 dev_dependencies:
   flutter_test:
