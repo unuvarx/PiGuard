@@ -1,18 +1,22 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:mobile_app/view/shared/layout.dart';
+import 'package:mobile_app/view_model/registered_faces/registered_faces_vm.dart';
 import 'package:mobile_app/view_model/shared/layout_vm.dart';
 import 'package:provider/provider.dart';
 
 void main() {
-  WidgetsFlutterBinding.ensureInitialized();  // << bu satır kesin olmalı
-
+  WidgetsFlutterBinding.ensureInitialized();
   HttpOverrides.global = new MyHttpOverrides();
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(
-            create: (BuildContext context) => LayoutViewModel()),
+          create: (BuildContext context) => LayoutViewModel(),
+        ),
+        ChangeNotifierProvider(
+          create: (BuildContext) => RegisteredFacesViewModel(),
+        ),
       ],
       child: UnuvarMobilya(),
     ),
@@ -23,9 +27,7 @@ class UnuvarMobilya extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      theme: ThemeData(
-        fontFamily: 'Poppins',
-      ),
+      theme: ThemeData(fontFamily: 'Poppins'),
       debugShowCheckedModeBanner: false,
       home: const Layout(),
     );

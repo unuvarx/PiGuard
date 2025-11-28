@@ -9,7 +9,7 @@ import 'package:mobile_app/view/face_registration/index.dart';
 import 'package:mobile_app/view/registered_faces/index.dart';
 
 class Layout extends StatefulWidget {
-  const Layout({super.key}); // body kaldırıldı, Layout sabit kalacak
+  const Layout({super.key});
 
   @override
   State<Layout> createState() => _Layout();
@@ -20,14 +20,13 @@ class _Layout extends State<Layout> {
   Widget build(BuildContext context) {
     return Consumer<LayoutViewModel>(
       builder: (context, vm, _) {
-        // Sayfaları bir kere tanımlayıp IndexedStack ile göstermek, layout'ın yeniden oluşturulmasını engeller ve her sayfanın state'ini korur.
         final pages = <Widget>[
           const HomeIndex(),
           const Notifications(),
           const LiveCamera(),
           const Strangers(),
           const FaceRegistration(),
-          const RegiteredFaces(),
+          const RegisteredFaces(),
         ];
 
         return Scaffold(
@@ -56,7 +55,6 @@ class _Layout extends State<Layout> {
                     ),
                   ),
                 ),
-                // Her ListTile bir Container ile sarıldı; 1px beyaz border eklendi.
                 Container(
                   margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                   decoration: BoxDecoration(
