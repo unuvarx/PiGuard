@@ -1,4 +1,5 @@
 from fastapi import FastAPI, UploadFile, Form
+from fastapi.staticfiles import StaticFiles
 import shutil
 import sqlite3
 import os
@@ -15,9 +16,17 @@ if not os.path.exists(ASSETS_DIR):
     os.makedirs(ASSETS_DIR)
 
 # -------------------------------
+# RPi IP'si
+# -------------------------------
+RPi_IP = "100.80.70.109"  
+
+# -------------------------------
 # FastAPI app
 # -------------------------------
 app = FastAPI(title="PiGuard Face Upload Server")
+
+# Static file serving (Flutter fotoğrafları buradan çeker)
+app.mount("/assets", StaticFiles(directory=ASSETS_DIR), name="assets")
 
 # -------------------------------
 # Photo upload endpoint
@@ -30,8 +39,7 @@ async def upload_face(
     image2: UploadFile = None
 ):
     """
-    Flutter veya başka istemciden 3 fotoğraf alır, 
-    data/assets klasörüne kaydeder ve SQLite DB'ye ekler.
+    Flutter'dan gelen 3 fotoğrafı kaydeder ve SQLite'a ekler.
     """
     image_paths = []
     for idx, image in enumerate([image0, image1, image2]):
@@ -40,26 +48,69 @@ async def upload_face(
             file_path = os.path.join(ASSETS_DIR, filename)
             with open(file_path, "wb") as buffer:
                 shutil.copyfileobj(image.file, buffer)
-            image_paths.append(file_path)
+            image_paths.append(filename)   # Sadece dosya adını DB'de saklıyoruz
     
-    # SQLite'a kaydet
+    # SQLite’a kaydet
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
+
     c.execute("""
         INSERT INTO registered_faces (name, image1, image2, image3)
         VALUES (?, ?, ?, ?)
-    """, (name, *image_paths))
+    """, (
+        name,
+        image_paths[0] if len(image_paths) > 0 else None,
+        image_paths[1] if len(image_paths) > 1 else None,
+        image_paths[2] if len(image_paths) > 2 else None,
+    ))
+
     conn.commit()
     conn.close()
 
     return {"status": "success", "images": image_paths}
 
 # -------------------------------
-# Health check / home
+# List all registered faces
+# -------------------------------
+@app.get("/faces")
+def list_faces():
+    """
+    SQLite DB'den kayıtlı yüzleri çeker ve Flutter'a JSON verir.
+    """
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+
+    c.execute("SELECT id, name, image1, image2, image3 FROM registered_faces")
+    rows = c.fetchall()
+    conn.close()
+
+    faces = []
+    for row in rows:
+        (face_id, name, img1, img2, img3) = row
+
+        images = []
+        for img in [img1, img2, img3]:
+            if img:
+                images.append(f"http://{RPi_IP}:8001/assets/{img}")  # Burada gerçek IP kullanılıyor
+
+        faces.append({
+            "id": face_id,
+            "name": name,
+            "images": images
+        })
+
+    return faces
+
+# -------------------------------
+# Health check
 # -------------------------------
 @app.get("/")
 def home():
-    return {"status": "Server running", "upload_endpoint": "/upload_face"}
+    return {
+        "status": "Server running",
+        "upload_endpoint": "/upload_face",
+        "face_list": "/faces"
+    }
 
 # -------------------------------
 # Run server
