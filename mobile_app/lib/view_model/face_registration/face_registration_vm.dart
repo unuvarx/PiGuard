@@ -24,7 +24,7 @@ class FaceRegistrationViewModel extends ChangeNotifier {
 
   late FaceDetector faceDetector;
 
-
+  bool _streaming = false;
 
   FaceRegistrationViewModel() {
     faceDetector = FaceDetector(
@@ -41,6 +41,7 @@ class FaceRegistrationViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
+    stopImageStream();
     controller?.dispose();
     faceDetector.close();
     super.dispose();
@@ -49,7 +50,7 @@ class FaceRegistrationViewModel extends ChangeNotifier {
   Future<void> initCamera() async {
     cameras = await availableCameras();
     final front = cameras!.firstWhere(
-          (c) => c.lensDirection == CameraLensDirection.front,
+      (c) => c.lensDirection == CameraLensDirection.front,
     );
 
     controller = CameraController(
@@ -63,19 +64,39 @@ class FaceRegistrationViewModel extends ChangeNotifier {
 
     await controller!.initialize();
 
-    controller!.startImageStream((image) {
-      if (!isDetecting && !isBusy) {
-        isDetecting = true;
-        processCameraImage(image);
-      }
-    });
-
     notifyListeners();
+  }
+
+  Future<void> startImageStream() async {
+    if (controller == null || !controller!.value.isInitialized || _streaming) return;
+    try {
+      _streaming = true;
+      controller!.startImageStream((image) {
+        if (!isDetecting && !isBusy) {
+          isDetecting = true;
+          processCameraImage(image);
+        }
+      });
+    } catch (e) {
+      _streaming = false;
+    }
+  }
+
+  Future<void> stopImageStream() async {
+    if (!_streaming || controller == null) return;
+    try {
+      await controller!.stopImageStream();
+    } catch (_) {
+      // bazı platformlarda desteklenmeyebilir
+    } finally {
+      _streaming = false;
+      isDetecting = false;
+    }
   }
 
   InputImage? _inputImageFromCameraImage(CameraImage image) {
     final camera = cameras!.firstWhere(
-          (c) => c.lensDirection == CameraLensDirection.front,
+      (c) => c.lensDirection == CameraLensDirection.front,
     );
 
     final rotation =

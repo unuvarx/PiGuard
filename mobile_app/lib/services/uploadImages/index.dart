@@ -1,8 +1,16 @@
 import 'package:http/http.dart' as http;
-import 'dart:io';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
+
+
 
 Future<void> uploadImages(String name, List<String> imagePaths) async {
-  final uri = Uri.parse("http://100.80.70.109:8001/upload_face");
+
+  final String _ip = dotenv.env['IP_ADDRESS'] ?? '0.0.0.0';
+  final String _baseUrl = "http://$_ip:8001/upload_face";
+  print("Uploading to: $_baseUrl");
+
+  final uri = Uri.parse(_baseUrl);
 
   final request = http.MultipartRequest('POST', uri);
 
