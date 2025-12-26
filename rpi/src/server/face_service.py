@@ -9,11 +9,16 @@ from datetime import datetime
 # Paths
 # -------------------------------
 BASE_DIR = os.path.dirname(__file__)
-DB_PATH = os.path.join(BASE_DIR, "../../data/db/registered_faces.db")
-ASSETS_DIR = os.path.join(BASE_DIR, "../../data/assets")
+DB_PATH = os.path.join(BASE_DIR, "../../data/db/PiGuardDB.db")
+ASSETS_DIR = os.path.join(BASE_DIR, "../../data/assets/registered_faces")
 
 if not os.path.exists(ASSETS_DIR):
     os.makedirs(ASSETS_DIR)
+
+# Strangers directory (serve via HTTP and list from DB)
+STRANGERS_DIR = os.path.join(BASE_DIR, "../../data/assets/strangers")
+if not os.path.exists(STRANGERS_DIR):
+    os.makedirs(STRANGERS_DIR)
 
 # -------------------------------
 # RPi IP'si
@@ -25,8 +30,8 @@ RPi_IP = "100.80.70.109"
 # -------------------------------
 app = FastAPI(title="PiGuard Face Upload Server")
 
-# Static file serving (Flutter fotoğrafları buradan çeker)
 app.mount("/assets", StaticFiles(directory=ASSETS_DIR), name="assets")
+app.mount("/strangers", StaticFiles(directory=STRANGERS_DIR), name="strangers")
 
 # -------------------------------
 # Photo upload endpoint
@@ -48,9 +53,8 @@ async def upload_face(
             file_path = os.path.join(ASSETS_DIR, filename)
             with open(file_path, "wb") as buffer:
                 shutil.copyfileobj(image.file, buffer)
-            image_paths.append(filename)   # Sadece dosya adını DB'de saklıyoruz
+            image_paths.append(filename)   
     
-    # SQLite’a kaydet
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
 
@@ -91,7 +95,7 @@ def list_faces():
         images = []
         for img in [img1, img2, img3]:
             if img:
-                images.append(f"http://{RPi_IP}:8001/assets/{img}")  # Burada gerçek IP kullanılıyor
+                images.append(f"http://{RPi_IP}:8001/assets/{img}")  
 
         faces.append({
             "id": face_id,
@@ -100,6 +104,40 @@ def list_faces():
         })
 
     return faces
+
+# -------------------------------
+# List strangers
+# -------------------------------
+@app.get("/strangers")
+def list_strangers():
+    """
+    SQLite DB'deki strangers tablosunu döner. Her kayıt için image URL, metadata ve eklenme zamanı verilir.
+    """
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    try:
+        c.execute("SELECT id, image_path, metadata, added_at FROM strangers ORDER BY added_at DESC")
+        rows = c.fetchall()
+    except Exception:
+        rows = []
+    finally:
+        conn.close()
+
+    out = []
+    for row in rows:
+        sid, image_path, metadata, added_at = row
+        if image_path:
+            fname = os.path.basename(image_path)
+            url = f"http://{RPi_IP}:8001/strangers/{fname}"
+        else:
+            url = None
+        out.append({
+            "id": sid,
+            "image": url,
+            "metadata": metadata,
+            "added_at": added_at
+        })
+    return out
 
 # -------------------------------
 # Health check
