@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_app/view_model/registered_faces/registered_faces_vm.dart';
 import 'package:provider/provider.dart';
+import 'package:mobile_app/main.dart';
 
 class RegisteredFaces extends StatefulWidget {
   const RegisteredFaces({super.key});
@@ -9,16 +10,59 @@ class RegisteredFaces extends StatefulWidget {
   State<RegisteredFaces> createState() => _RegisteredFacesState();
 }
 
-class _RegisteredFacesState extends State<RegisteredFaces> {
+class _RegisteredFacesState extends State<RegisteredFaces> with RouteAware {
+  RegisteredFacesViewModel? vm;
+  bool _subscribed = false;
+  DateTime? _lastLoadAttempt;
+
+  void _tryScheduleLoad() {
+    final now = DateTime.now();
+    // Aynı işlem kısa sürede tekrar tetiklenmesin
+    if (_lastLoadAttempt != null &&
+        now.difference(_lastLoadAttempt!) < const Duration(seconds: 2)) {
+      return;
+    }
+    _lastLoadAttempt = now;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      vm?.loadFaces();
+    });
+  }
+
   @override
-  void initState() {
-    super.initState();
-    Future.microtask(
-      () => Provider.of<RegisteredFacesViewModel>(
-        context,
-        listen: false,
-      ).loadFaces(),
-    );
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    vm ??= Provider.of<RegisteredFacesViewModel>(context, listen: false);
+    final route = ModalRoute.of(context);
+    // subscribe işlemi sadece bir kez yapılır ve ilk görünürlük burada ele alınır
+    if (route != null && !_subscribed) {
+      routeObserver.subscribe(this, route);
+      _subscribed = true;
+      // Eğer ilk açılışta görünürse hemen yükle (post-frame)
+      if (route.isCurrent) {
+        _tryScheduleLoad();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    if (_subscribed) {
+      routeObserver.unsubscribe(this);
+      _subscribed = false;
+    }
+    super.dispose();
+  }
+
+  @override
+  void didPush() {
+    _tryScheduleLoad();
+  }
+
+  @override
+  void didPopNext() {
+    _tryScheduleLoad();
   }
 
   @override
@@ -26,19 +70,19 @@ class _RegisteredFacesState extends State<RegisteredFaces> {
     return Scaffold(
       appBar: AppBar(title: const Text("Tanımlı Yüzler")),
       body: Consumer<RegisteredFacesViewModel>(
-        builder: (context, vm, child) {
-          if (vm.isLoading) {
+        builder: (context, vmWatch, child) {
+          if (vmWatch.isLoading) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (vm.faces.isEmpty) {
+          if (vmWatch.faces.isEmpty) {
             return const Center(child: Text("Kayıtlı yüz bulunamadı"));
           }
 
           return ListView.builder(
-            itemCount: vm.faces.length,
+            itemCount: vmWatch.faces.length,
             itemBuilder: (context, index) {
-              final face = vm.faces[index];
+              final face = vmWatch.faces[index];
 
               final List images = face["images"] ?? [];
 

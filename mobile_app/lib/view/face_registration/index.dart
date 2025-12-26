@@ -2,25 +2,92 @@ import 'package:flutter/material.dart';
 import 'package:mobile_app/view_model/face_registration/face_registration_vm.dart';
 import 'package:provider/provider.dart';
 import 'package:camera/camera.dart';
+import 'package:mobile_app/main.dart'; // routeObserver
 
-class FaceRegistration extends StatelessWidget {
+class FaceRegistration extends StatefulWidget {
   const FaceRegistration({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => FaceRegistrationViewModel(),
-      builder: (context, _) {
-        final vm = context.watch<FaceRegistrationViewModel>();
+  State<FaceRegistration> createState() => _FaceRegistrationState();
+}
 
-        if (vm.controller == null || !vm.controller!.value.isInitialized) {
+class _FaceRegistrationState extends State<FaceRegistration> with RouteAware, WidgetsBindingObserver {
+  late final FaceRegistrationViewModel vm;
+
+  @override
+  void initState() {
+    super.initState();
+    vm = FaceRegistrationViewModel();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route != null) routeObserver.subscribe(this, route);
+    // if page already visible at first build, başlat (post-frame)
+    if (route?.isCurrent ?? false) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        vm.startImageStream();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    routeObserver.unsubscribe(this);
+    WidgetsBinding.instance.removeObserver(this);
+    vm.dispose();
+    super.dispose();
+  }
+
+  // RouteAware callbacks
+  @override
+  void didPush() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      vm.startImageStream();
+    });
+  }
+
+  @override
+  void didPopNext() {
+    // geri dönüldüğünde görünür oldu
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      vm.startImageStream();
+    });
+  }
+
+  @override
+  void didPushNext() {
+    // başka sayfa üstüne geldi -> durdur
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      vm.stopImageStream();
+    });
+  }
+
+  @override
+  void didPop() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      vm.stopImageStream();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider<FaceRegistrationViewModel>.value(
+      value: vm,
+      builder: (context, _) {
+        final vmWatch = context.watch<FaceRegistrationViewModel>();
+
+        if (vmWatch.controller == null || !vmWatch.controller!.value.isInitialized) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
 
-        if (vm.statusMessage != null && !vm.dialogShown) {
-          vm.dialogShown = true;
+        if (vmWatch.statusMessage != null && !vmWatch.dialogShown) {
+          vmWatch.dialogShown = true;
           Future.microtask(() {
             showDialog(
               context: context,
@@ -37,14 +104,14 @@ class FaceRegistration extends StatelessWidget {
                   ],
                 ),
                 content: Text(
-                  vm.statusMessage!,
+                  vmWatch.statusMessage!,
                   style: const TextStyle(fontSize: 18),
                 ),
                 actions: [
                   TextButton(
                     onPressed: () {
                       Navigator.of(context).pop();
-                      vm.clearStatusMessage(); // UI'ı başa döndür
+                      vmWatch.clearStatusMessage(); // UI'ı başa döndür
                     },
                     child: const Text(
                       "Ok",
@@ -62,19 +129,19 @@ class FaceRegistration extends StatelessWidget {
           body: Stack(
             fit: StackFit.expand,
             children: [
-              CameraPreview(vm.controller!),
+              CameraPreview(vmWatch.controller!),
               Center(
                 child: Container(
                   width: 280,
                   height: 380,
                   decoration: BoxDecoration(
                     color: Colors.transparent,
-                    border: Border.all(color: vm.frameColor, width: 6),
+                    border: Border.all(color: vmWatch.frameColor, width: 6),
                     borderRadius: BorderRadius.circular(200),
                   ),
                 ),
               ),
-              if (vm.currentStep < vm.steps.length)
+              if (vmWatch.currentStep < vmWatch.steps.length)
                 Positioned(
                   top: 50,
                   left: 20,
@@ -86,7 +153,7 @@ class FaceRegistration extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      "Turn your head:\n${vm.steps[vm.currentStep]}",
+                      "Turn your head:\n${vmWatch.steps[vmWatch.currentStep]}",
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         color: Colors.white,
@@ -96,7 +163,7 @@ class FaceRegistration extends StatelessWidget {
                     ),
                   ),
                 ),
-              if (vm.currentStep < vm.steps.length)
+              if (vmWatch.currentStep < vmWatch.steps.length)
                 Positioned(
                   bottom: 40,
                   left: 0,
@@ -104,11 +171,11 @@ class FaceRegistration extends StatelessWidget {
                   child: Center(
                     child: AnimatedOpacity(
                       duration: const Duration(milliseconds: 300),
-                      opacity: vm.isPoseValid && !vm.isBusy ? 1.0 : 0.0,
+                      opacity: vmWatch.isPoseValid && !vmWatch.isBusy ? 1.0 : 0.0,
                       child: IgnorePointer(
-                        ignoring: !vm.isPoseValid || vm.isBusy,
+                        ignoring: !vmWatch.isPoseValid || vmWatch.isBusy,
                         child: ElevatedButton.icon(
-                          onPressed: () => vm.takePicture(),
+                          onPressed: () => vmWatch.takePicture(),
                           icon: const Icon(Icons.camera_alt, size: 30),
                           label: const Text(
                             "Capture",
