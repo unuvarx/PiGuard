@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:mobile_app/view/notifications/index.dart';
 import 'package:provider/provider.dart';
 import 'package:mobile_app/view_model/shared/layout_vm.dart';
-import 'package:mobile_app/view/home/index.dart';
 import 'package:mobile_app/view/live_camera/index.dart';
 import 'package:mobile_app/view/strangers/strangers.dart';
 import 'package:mobile_app/view/face_registration/index.dart';
@@ -21,8 +19,6 @@ class _Layout extends State<Layout> {
     return Consumer<LayoutViewModel>(
       builder: (context, vm, _) {
         final pages = <Widget>[
-          const HomeIndex(),
-          const Notifications(),
           const LiveCamera(),
           const Strangers(),
           const FaceRegistration(),
@@ -62,40 +58,10 @@ class _Layout extends State<Layout> {
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: ListTile(
-                    leading: const Icon(Icons.home, color: Colors.white),
-                    title: const Text('Home', style: TextStyle(color: Colors.white)),
-                    onTap: () {
-                      vm.selectedIndex = 0;
-                      Navigator.pop(context);
-                    },
-                  ),
-                ),
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.white, width: 1),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: ListTile(
-                    leading: const Icon(Icons.notifications_active, color: Colors.white),
-                    title: const Text('Notifications', style: TextStyle(color: Colors.white)),
-                    onTap: () {
-                      vm.selectedIndex = 1;
-                      Navigator.pop(context);
-                    },
-                  ),
-                ),
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.white, width: 1),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: ListTile(
                     leading: const Icon(Icons.video_camera_back, color: Colors.white),
                     title: const Text('Live Camera Stream', style: TextStyle(color: Colors.white)),
                     onTap: () {
-                      vm.selectedIndex = 2;
+                      vm.selectedIndex = 0;
                       Navigator.pop(context);
                     },
                   ),
@@ -110,7 +76,7 @@ class _Layout extends State<Layout> {
                     leading: const Icon(Icons.security, color: Colors.white),
                     title: const Text('Strangers', style: TextStyle(color: Colors.white)),
                     onTap: () {
-                      vm.selectedIndex = 3;
+                      vm.selectedIndex = 1;
                       Navigator.pop(context);
                     },
                   ),
@@ -125,7 +91,7 @@ class _Layout extends State<Layout> {
                     leading: const Icon(Icons.add_reaction, color: Colors.white),
                     title: const Text('Face Registration', style: TextStyle(color: Colors.white)),
                     onTap: () {
-                      vm.selectedIndex = 4;
+                      vm.selectedIndex = 2;
                       Navigator.pop(context);
                     },
                   ),
@@ -140,7 +106,7 @@ class _Layout extends State<Layout> {
                     leading: const Icon(Icons.face, color: Colors.white),
                     title: const Text('Registered Faces', style: TextStyle(color: Colors.white)),
                     onTap: () {
-                      vm.selectedIndex = 5;
+                      vm.selectedIndex = 3;
                       Navigator.pop(context);
                     },
                   ),
