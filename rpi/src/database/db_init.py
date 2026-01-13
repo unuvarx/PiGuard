@@ -34,6 +34,14 @@ def init_db():
         )
     ''')
 
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS notifications (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            stranger_id INTEGER,
+            FOREIGN KEY (stranger_id) REFERENCES strangers(id)
+        )
+    ''')
+
     conn.commit()
     conn.close()
     print(f"Veritabanı başarıyla oluşturuldu: {DB_PATH}")

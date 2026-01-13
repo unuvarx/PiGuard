@@ -2,7 +2,7 @@ from fastapi import FastAPI, UploadFile, Form
 from fastapi.staticfiles import StaticFiles
 import shutil
 import sqlite3
-import os
+import os 
 from datetime import datetime
 
 # -------------------------------
@@ -19,6 +19,11 @@ if not os.path.exists(ASSETS_DIR):
 STRANGERS_DIR = os.path.join(BASE_DIR, "../../data/assets/strangers")
 if not os.path.exists(STRANGERS_DIR):
     os.makedirs(STRANGERS_DIR)
+
+# Flag file used to signal the stream server to reload registered encodings
+RELOAD_FLAG = os.path.join(BASE_DIR, "../../data/.registered_update")
+# ensure parent dir exists
+os.makedirs(os.path.dirname(RELOAD_FLAG), exist_ok=True)
 
 # -------------------------------
 # RPi IP'si
@@ -70,6 +75,13 @@ async def upload_face(
 
     conn.commit()
     conn.close()
+
+    # touch the reload flag so the stream server reloads encodings immediately
+    try:
+        with open(RELOAD_FLAG, 'w') as f:
+            f.write(datetime.now().isoformat())
+    except Exception:
+        pass
 
     return {"status": "success", "images": image_paths}
 
