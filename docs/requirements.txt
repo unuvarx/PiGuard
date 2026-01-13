@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+picamera2
+opencv-python
+numpy
+Pillow
+face_recognition
+dlib
+aiofiles
+python-multipart
